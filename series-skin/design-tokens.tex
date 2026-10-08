@@ -1,0 +1,53 @@
+% ============================================================================
+% Shared series design tokens (ivory / ink)
+% Self-contained: safe for elegantbook body and standalone cover drivers.
+% ============================================================================
+\RequirePackage{xcolor}
+
+% --- Series palette (no per-volume accent colors) ---
+\definecolor{PaperIvory}{RGB}{245,240,230} % Paper ivory #F5F0E6
+\definecolor{InkBrown}{RGB}{44,36,22} % Primary ink #2C2416
+\definecolor{InkMuted}{RGB}{92,79,58} % Secondary / rule ink #5C4F3A
+
+% --- Cover palette (Springer UTM 风格): blue gradient band + yellow field,
+% navy ink, olive accents. Values sampled from the reference (2026-10).
+% Before print, convert to CMYK and proof, e.g.
+%   \definecolor{SeriesBandL}{cmyk}{0.68,0.35,0.05,0}  % placeholder, calibrate on proof
+%   \definecolor{SeriesBandR}{cmyk}{0.95,0.65,0.1,0.25}% placeholder, calibrate on proof
+%   \definecolor{SeriesField}{cmyk}{0,0.07,0.55,0}     % placeholder, calibrate on proof
+\definecolor{SeriesBandL}{RGB}{63,136,194}   % band gradient, light (bottom-left) #3F88C2
+\definecolor{SeriesBandR}{RGB}{18,70,128}    % band gradient, dark (right) #124680
+\definecolor{SeriesField}{RGB}{255,238,138}  % yellow field #FFEE8A
+\definecolor{SeriesFieldL}{RGB}{254,245,178} % rail yellow, lighter at bottom #FEF5B2
+\definecolor{SeriesNavy}{RGB}{0,48,104}      % ink: titles / labels / badge #003068
+\definecolor{SeriesOlive}{RGB}{177,160,66}   % edition line + formula #B1A042
+\definecolor{SeriesWm}{RGB}{78,146,200}      % watermark letters (solid premix) #4E92C8
+\definecolor{SeriesBg}{RGB}{255,238,138}     % legacy alias = yellow field
+\definecolor{SeriesAccent}{RGB}{177,160,66}  % legacy alias = olive
+% --- Gray hierarchy by color mixing only (no opacity/transparency, PDF/X-safe) ---
+\colorlet{SeriesDim}{SeriesOlive!65!black}
+\colorlet{SeriesDimStrong}{SeriesNavy!60!SeriesField}
+
+% --- Summary-box inks (dark field, light text; see environments.tex) ---
+\colorlet{InkWash}{InkMuted}
+\colorlet{InkJoint}{PaperIvory}
+
+% --- Physical-book twoside geometry (binding inner / notes outer) ---
+% Applied by series-skin/tufte-skin.tex after elegantbook oneside load.
+% Page-parameter spec (odd page): 16开 paper 185×260mm with a 128×216mm text
+% block — 正文五号（10.5pt）约 35 字/行、基线 16.2pt 下约 38 行/页。
+% inner=25mm（订口），outer=32mm（切口，含 5mm 边注距 + 25mm 边注栏）；
+% 边注栏宽 25mm≈71pt，与旧 A4 版式等宽，sidenote 观感不变。
+\newlength{\SeriesInner}
+\newlength{\SeriesOuter}
+\newlength{\SeriesMarginparWidth}
+\newlength{\SeriesMarginparSep}
+\newlength{\SeriesTextLeft}
+\newlength{\SeriesTextRight}
+\setlength{\SeriesInner}{25mm}
+\setlength{\SeriesOuter}{32mm}
+\setlength{\SeriesMarginparWidth}{25mm}
+\setlength{\SeriesMarginparSep}{5mm}
+% Backward-compat aliases (pre-twoside names)
+\setlength{\SeriesTextLeft}{\SeriesInner}
+\setlength{\SeriesTextRight}{\SeriesOuter}

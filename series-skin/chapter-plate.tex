@@ -1,0 +1,216 @@
+% ============================================================================
+% Chapter entry plate — full page before each numbered \chapter
+% Visual language matches series covers / volume dividers:
+%   PaperIvory field · hairline frame · chapter portrait · math watermark
+%   top rule · hero title · famous quotation (no author/publisher chrome)
+% ============================================================================
+
+\RequirePackage{tikz}
+\usetikzlibrary{calc}
+
+% Series title for the top chrome: define \SeriesTitleCN in your document
+% preamble (empty by default).
+\providecommand{\SeriesTitleCN}{}
+
+% Cover font families (IfFileExists-guarded; override by defining them first)
+\ifdefined\coverhei\else
+  \ifdefined\newCJKfontfamily
+    \IfFileExists{assets/fonts/NotoSansSC-Regular.otf}{%
+      \newCJKfontfamily\coverhei[Path=assets/fonts/, BoldFont=NotoSansSC-Bold.otf]{NotoSansSC-Regular.otf}%
+    }{%
+      \IfFileExists{assets/fonts/LXGWNeoXiHeiPlus.ttf}{%
+        \newCJKfontfamily\coverhei[Path=assets/fonts/, AutoFakeBold=2.5]{LXGWNeoXiHeiPlus.ttf}%
+      }{%
+        \newcommand{\coverhei}{\sffamily}%
+      }%
+    }%
+    \IfFileExists{assets/fonts/NotoSerifSC-Bold.otf}{%
+      \newCJKfontfamily\coversong[Path=assets/fonts/]{NotoSerifSC-Bold.otf}%
+    }{%
+      \IfFileExists{assets/fonts/LXGWNeoZhiSongPlus.ttf}{%
+        \newCJKfontfamily\coversong[Path=assets/fonts/, AutoFakeBold=2.5]{LXGWNeoZhiSongPlus.ttf}%
+      }{%
+        \newcommand{\coversong}{\bfseries}%
+      }%
+    }%
+    \IfFileExists{assets/fonts/STKaiti.ttf}{%
+      \newCJKfontfamily\chinesekai[Path=assets/fonts/]{STKaiti.ttf}%
+    }{%
+      \ifdefined\chinesekai\else\newcommand{\chinesekai}{\rmfamily}\fi
+    }%
+    \IfFileExists{assets/fonts/LongCang-Regular.ttf}{%
+      \newCJKfontfamily\covertitlefont[Path=assets/fonts/, AutoFakeBold=2.0]{LongCang-Regular.ttf}%
+    }{%
+      \newcommand{\covertitlefont}{\coversong}%
+    }%
+  \else
+    \newcommand{\coverhei}{\sffamily}%
+    \newcommand{\coversong}{\bfseries}%
+    \newcommand{\covertitlefont}{\bfseries}%
+    \ifdefined\chinesekai\else\newcommand{\chinesekai}{\rmfamily}\fi
+  \fi
+\fi
+\ifdefined\coverlatinserif\else
+  \ifdefined\newfontfamily
+    \IfFileExists{assets/fonts/EBGaramond-Regular.ttf}{%
+      \newfontfamily\coverlatinserif[Path=assets/fonts/,
+        ItalicFont=EBGaramond-Italic.ttf,
+        BoldFont=EBGaramond-Bold.ttf]{EBGaramond-Regular.ttf}%
+    }{%
+      \newcommand{\coverlatinserif}{\rmfamily}%
+    }%
+  \else
+    \newcommand{\coverlatinserif}{\rmfamily}%
+  \fi
+\fi
+\ifdefined\covertitlefont\else
+  \newcommand{\covertitlefont}{\coversong}%
+\fi
+
+% ----- Per-chapter content hooks (override in your document preamble) -----
+% The plate layout pulls all per-chapter content through these hooks so the
+% template carries no book data. Redefine each \newcommand in your preamble,
+% typically with a \ifcase table keyed on the chapter number:
+%   \renewcommand{\SeriesChapterPartCN}[1]{...}   part/track label (Zone D)
+%   \renewcommand{\SeriesChapterQuote}[1]{...}    epigraph text (Zone E)
+%   \renewcommand{\SeriesChapterQuoteBy}[1]{...}   epigraph attribution
+%   \renewcommand{\SeriesSetChapterPortraitPath}[1]{...} portrait image path
+% Defaults are neutral: no part label, no epigraph, no portrait; the plate
+% renders the ivory field, frame, top rule and hero title only.
+
+\newcommand{\SeriesChapterPartCN}[1]{}
+\newcommand{\SeriesChapterQuote}[1]{}
+\newcommand{\SeriesChapterQuoteBy}[1]{}
+
+% Portrait helper: default sets an empty path so the portrait zone is skipped
+% (the layout guards it with \IfFileExists). To add chapter portraits, set
+% \SeriesChapterPortraitPath to an existing image file inside the hook above.
+\newcommand{\SeriesChapterPortraitPath}{}
+\newcommand{\SeriesSetChapterPortraitPath}[1]{\renewcommand{\SeriesChapterPortraitPath}{}}
+
+% Full-page plate: #1 = chapter number (arabic), #2 = title
+\newcommand{\SeriesChapterPlatePage}[2]{%
+  \cleardoublepage
+  \thispagestyle{empty}%
+  \begin{tikzpicture}[remember picture, overlay]
+    % --- Field ---
+    \fill[PaperIvory]
+      (current page.south west) rectangle (current page.north east);
+
+    % Per-chapter mathematician portrait (right field, faint)
+    \SeriesSetChapterPortraitPath{#1}%
+    \IfFileExists{\SeriesChapterPortraitPath}{%
+      \begin{scope}[opacity=0.16]
+        \node[anchor=south east, inner sep=0pt]
+          at ([xshift=-0.45cm, yshift=1.35cm]current page.south east)
+          {\includegraphics[height=0.70\paperheight,keepaspectratio]
+            {\SeriesChapterPortraitPath}};
+      \end{scope}
+      % soft left ivory wash so title/quote stay readable
+      \fill[PaperIvory, opacity=0.58]
+        (current page.south west) rectangle
+        ([xshift=0.46\paperwidth]current page.north west);
+      \fill[PaperIvory, opacity=0.30]
+        ([xshift=0.46\paperwidth]current page.south west) rectangle
+        ([xshift=0.60\paperwidth]current page.north west);
+    }{}%
+
+    % Optional paper texture
+    \IfFileExists{assets/images/texture.png}{%
+      \begin{scope}[opacity=0.035]
+        \node[anchor=center, inner sep=0pt]
+          at (current page.center)
+          {\includegraphics[width=\paperwidth,height=\paperheight]
+            {assets/images/texture.png}};
+      \end{scope}
+    }{}%
+
+    % Hairline frame
+    \draw[InkMuted, opacity=0.35, line width=0.6pt]
+      ([xshift=1.1cm, yshift=1.1cm]current page.south west) rectangle
+      ([xshift=-1.1cm, yshift=-1.1cm]current page.north east);
+
+    % === Zone B: top chrome ===
+    \draw[InkBrown, line width=0.9pt]
+      ([xshift=2.2cm, yshift=-2.15cm]current page.north west) --
+      ([xshift=-2.2cm, yshift=-2.15cm]current page.north east);
+    \node[anchor=south west, text=InkMuted, inner sep=0pt]
+      at ([xshift=2.2cm, yshift=-2.0cm]current page.north west)
+      {\coverhei\fontsize{9.5}{12}\selectfont \SeriesTitleCN};
+    \node[anchor=south east, text=InkMuted, inner sep=0pt]
+      at ([xshift=-2.2cm, yshift=-2.0cm]current page.north east)
+      {\coverhei\fontsize{8}{10}\selectfont 进入新章};
+
+    % === Zone D: chapter + hero title ===
+    \node[anchor=north west, text=InkMuted, inner sep=0pt]
+      at ([xshift=2.2cm, yshift=-7.75cm]current page.north west)
+      {%
+        \coverhei\fontsize{13}{16}\selectfont
+        第\,#1\,章%
+      };
+
+    \node[anchor=north west, text=InkBrown, inner sep=0pt,
+          text width=0.58\paperwidth, align=left]
+      at ([xshift=2.2cm, yshift=-8.65cm]current page.north west)
+      {\covertitlefont\fontsize{32}{40}\selectfont #2};
+
+    \draw[InkBrown, line width=1.15pt]
+      ([xshift=2.2cm, yshift=-11.15cm]current page.north west) --
+      ++(4.2cm,0);
+
+    \node[anchor=north west, text=InkBrown, inner sep=0pt]
+      at ([xshift=2.2cm, yshift=-11.85cm]current page.north west)
+      {\coverlatinserif\fontsize{13}{16}\selectfont \SeriesChapterPartCN{#1}};
+
+    % === Zone E: famous quotation (skipped when the quote hook is empty) ===
+    \ifnum\pdfstrcmp{\SeriesChapterQuote{#1}}{}=0
+      \node[anchor=north west, text=InkBrown, inner sep=0pt]
+        at ([xshift=2.2cm, yshift=-13.15cm]current page.north west)
+        {%
+          \begin{minipage}{0.58\paperwidth}
+            {\chinesekai\fontsize{12.5}{19}\selectfont
+              「\,\SeriesChapterQuote{#1}」}\\[0.45cm]
+            {\coverhei\fontsize{10}{13}\selectfont\color{InkMuted}
+              ———\ \SeriesChapterQuoteBy{#1}}
+          \end{minipage}%
+        };
+    \fi
+
+    % Bottom hairline only (no author / publisher)
+    \draw[InkMuted, line width=0.55pt, opacity=0.65]
+      ([xshift=2.2cm, yshift=2.0cm]current page.south west) --
+      ([xshift=-2.2cm, yshift=2.0cm]current page.south east);
+  \end{tikzpicture}%
+  \clearpage
+}
+
+% Wrap numbered \chapter to insert plate first
+\makeatletter
+\AtBeginDocument{%
+  \let\SeriesOrigChapter\chapter
+  \RenewDocumentCommand{\chapter}{s o m}{%
+    \IfBooleanTF{#1}{%
+      \SeriesOrigChapter*{#3}%
+    }{%
+      % 章扉只插在正文章节之前：前言、附录等正文之外的 \chapter 不编号，
+      % 扉页上的章号是用计数器推算的，放在那里会印出「第26章 习题解答」。
+      % \cleardoublepage 的改写只能用 \let 存取恢复，不能把 \SeriesOrigChapter
+      % 包进 \begingroup：章级 \label 依赖 \refstepcounter{chapter} 写下的
+      % \@currentlabel，该赋值是局部的，一旦被 \endgroup 丢弃，cleveref 会把
+      % 章引用记成上一章的节号（正文里出现「第16.0.0小节」）。
+      \let\SeriesSavedClearDoublePage\cleardoublepage
+      \if@mainmatter
+        \SeriesChapterPlatePage{\the\numexpr\value{chapter}+1\relax}{#3}%
+        \let\cleardoublepage\clearpage
+      \fi
+      \IfNoValueTF{#2}{%
+        \SeriesOrigChapter{#3}%
+      }{%
+        \SeriesOrigChapter[#2]{#3}%
+      }%
+      \let\cleardoublepage\SeriesSavedClearDoublePage
+    }%
+  }%
+  \typeout{SERIES: chapter-plate-hook=ok}%
+}
+\makeatother

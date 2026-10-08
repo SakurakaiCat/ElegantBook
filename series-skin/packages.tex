@@ -1,0 +1,52 @@
+% Supplementary package loading for the series-skin stack.
+% Note: ElegantBook already loads many common packages.
+% Only add packages not included in elegantbook.cls.
+
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{mathtools}
+\usepackage{float}
+
+\captionsetup{
+  font          = small,
+  labelfont     = bf,
+  labelsep      = quad,
+  skip          = 8pt,
+  justification = justified,
+  singlelinecheck = true
+}
+\captionsetup[figure]{name=图, skip=8pt}
+\captionsetup[table]{name=表, position=top, skip=6pt}
+\captionsetup[subfigure]{labelformat=simple, labelsep=space}
+\renewcommand{\thesubfigure}{(\alph{subfigure})}
+
+\usepackage{tikz-3dplot}
+\usetikzlibrary{
+  positioning,
+  calc,
+  arrows.meta,
+  patterns,
+  shapes.geometric,
+  angles,
+  quotes,
+  intersections,
+  matrix,
+  decorations.pathreplacing,
+  backgrounds,
+  3d
+}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\usepackage{adjustbox}
+
+% Margin notes with vertical collision avoidance.
+% marginfix rewrites the \marginpar output routine so that margin notes
+% stack top-to-bottom without overlap; macros in tufte-skin.tex.
+\usepackage{marginfix}
+
+% Terminology index (Chinese title; add your own \indexprologue if desired)
+\usepackage{imakeidx}
+\makeindex[title={术语索引}, intoc]

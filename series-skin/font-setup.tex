@@ -1,0 +1,142 @@
+% ============================================================================
+% Font setup for the open-source edition
+% Compatible with ElegantBook (ctex already loaded by elegantbook.cls)
+% ============================================================================
+
+% ============================================================================
+% Local font directory
+% ============================================================================
+\newcommand{\fontdir}{assets/fonts/}
+
+% ============================================================================
+% CJK font setup (xeCJK already loaded by ctex)
+% ============================================================================
+\xeCJKsetup{
+    AutoFakeBold = true,
+    AutoFakeSlant = 0.2,
+    PunctStyle = kaiming,
+    CheckSingle = true,
+    CJKglue = \hskip 0pt plus 0.04em minus 0.02em,
+    CJKecglue = \hskip 0.25em plus 0.08em minus 0.05em
+}
+
+% ============================================================================
+% Latin fonts
+% ============================================================================
+\setmainfont{TimesNewRoman.ttf}[
+    Path = \fontdir,
+    Scale = 1.0,
+    Ligatures = TeX,
+    BoldFont = TimesNewRomanBold.ttf,
+    ItalicFont = TimesNewRomanItalic.ttf,
+    BoldItalicFont = TimesNewRomanBoldItalic.ttf,
+]
+
+\setsansfont{GoogleSans-Regular.ttf}[
+    Path = \fontdir,
+    Scale = 0.95,
+    BoldFont = GoogleSans-Bold.ttf,
+    ItalicFont = GoogleSans-Italic.ttf,
+    BoldItalicFont = GoogleSans-BoldItalic.ttf,
+]
+
+\setmonofont{CourierNew.ttf}[
+    Path = \fontdir,
+    Scale = 0.9,
+    BoldFont = CourierNewBold.ttf,
+    ItalicFont = CourierNewItalic.ttf,
+    BoldItalicFont = CourierNewBoldItalic.ttf,
+]
+
+% ============================================================================
+% CJK font commands
+% ============================================================================
+% 思源宋体（NotoSerifSC，Regular/Bold 双字重）作正文宋体；
+% 思源黑体（NotoSansSC，Regular/Bold 双字重）作黑体，与思源宋体同族配套。
+% 楷体/仿宋沿用 STKaiti/STFangsong，单字重，粗体由 AutoFakeBold 合成。
+\newcommand{\MySongTi}{NotoSerifSC-Regular.otf}
+\newcommand{\MySongTiBold}{NotoSerifSC-Bold.otf}
+\newcommand{\MyHeiTi}{NotoSansSC-Regular.otf}
+\newcommand{\MyHeiTiBold}{NotoSansSC-Bold.otf}
+\newcommand{\MyKaiTi}{STKaiti.ttf}
+\newcommand{\MyFangSong}{STFangsong.ttf}
+
+\setCJKmainfont{\MySongTi}[
+    Path = \fontdir,
+    Scale = 1.05,
+    AutoFakeBold = false,
+    BoldFont = \MySongTiBold,
+    AutoFakeSlant = 0.2,
+    ItalicFont = \MyKaiTi,
+    BoldItalicFont = \MyKaiTi,
+]
+\setCJKsansfont{\MyHeiTi}[
+    Path = \fontdir,
+    Scale = 1.05,
+    BoldFont = \MyHeiTiBold,
+    AutoFakeSlant = 0.2,
+]
+\setCJKmonofont{\MyHeiTi}[
+    Path = \fontdir,
+    Scale = 1.05,
+    BoldFont = \MyHeiTiBold,
+    AutoFakeSlant = 0.2,
+]
+
+% ============================================================================
+% Scale = 1.05：CJK 正文 10pt → 五号 10.5pt（参考陶哲轩《实分析》实测）。
+% Latin/数学字体不受影响，仍为 10pt，与陶书「正文五号 + 数学10pt」一致。
+% 各 CJK 族统一缩放以保持行内字号一致；\zihao 标题因乘 1.05 略大于名义值。
+\newCJKfontfamily\kaishu{\MyKaiTi}[Path=\fontdir, Scale=1.05, AutoFakeBold=2.5, AutoFakeSlant=0.2]
+\newCJKfontfamily\songti{\MySongTi}[Path=\fontdir, Scale=1.05, BoldFont=\MySongTiBold, AutoFakeSlant=0.2]
+\newCJKfontfamily\heiti{\MyHeiTi}[Path=\fontdir, Scale=1.05, BoldFont=\MyHeiTiBold, AutoFakeSlant=0.2]
+\newCJKfontfamily\fangsong{\MyFangSong}[Path=\fontdir, Scale=1.05, AutoFakeBold=2.5, AutoFakeSlant=0.2]
+
+% 封面标题保留原 SimHei（不随正文黑体替换为思源黑体）
+\newCJKfontfamily\coverheiti{SimHei.ttf}[Path=\fontdir, Scale=1.05, AutoFakeBold=2.5, AutoFakeSlant=0.2]
+
+\newcommand\thmheiti{\heiti}
+
+\setCJKfamilyfont{hei2}{\MyHeiTi}[Path=\fontdir, Scale=1.05, BoldFont=\MyHeiTiBold, AutoFakeSlant=0.2]
+\newcommand{\heiTwo}{\CJKfamily{hei2}}
+\setCJKfamilyfont{sectionfont}{\MyHeiTi}[Path=\fontdir, Scale=1.05, BoldFont=\MyHeiTiBold, AutoFakeSlant=0.2]
+\newCJKfontfamily\pffont{\MySongTi}[Path=\fontdir, Scale=1.05, BoldFont=\MySongTiBold, AutoFakeSlant=0.2]
+
+% ============================================================================
+% mathrsfs/dsfont/bm were previously loaded here but are unused in the body
+% (\mathscr, \mathds, \bm have zero occurrences in chapters/). They conflict
+% with unicode-math (now loaded in math-setup.tex), so they are removed.
+% \mathfrak (used only in styles/mycommand.sty Lie-algebra macros, themselves
+% unused in the body) and \boldsymbol (from amsbsy, 8 uses) are provided by
+% base LaTeX / amsmath and survive the removal.
+
+% ============================================================================
+% Explicit font-shape fallbacks (silent declared substitutions)
+% ============================================================================
+% OMS: \textcircled's default accent uses OMS/\rmdefault. Times is not an OMS
+% math-symbol font; substitute cmsy so LaTeX does not warn and fall back ad hoc.
+\DeclareFontFamily{OMS}{TimesNewRoman.ttf(0)}{}
+\DeclareFontShape{OMS}{TimesNewRoman.ttf(0)}{m}{n}{<->ssub * cmsy/m/n}{}
+\DeclareFontShape{OMS}{TimesNewRoman.ttf(0)}{b}{n}{<->ssub * cmsy/m/n}{}
+\DeclareFontShape{OMS}{TimesNewRoman.ttf(0)}{bx}{n}{<->ssub * cmsy/m/n}{}
+
+% TU sc: neither Times nor Noto Serif SC has OpenType smcp. Map small-caps
+% shapes to the matching series upright so \textsc under \bfseries is silent.
+\DeclareFontShape{TU}{TimesNewRoman.ttf(0)}{m}{sc}{<->ssub * TimesNewRoman.ttf(0)/m/n}{}
+\DeclareFontShape{TU}{TimesNewRoman.ttf(0)}{b}{sc}{<->ssub * TimesNewRoman.ttf(0)/b/n}{}
+\DeclareFontShape{TU}{TimesNewRoman.ttf(0)}{bx}{sc}{<->ssub * TimesNewRoman.ttf(0)/b/n}{}
+\DeclareFontShape{TU}{NotoSerifSC-Regular.otf(0)}{m}{sc}{<->ssub * NotoSerifSC-Regular.otf(0)/m/n}{}
+\DeclareFontShape{TU}{NotoSerifSC-Regular.otf(0)}{b}{sc}{<->ssub * NotoSerifSC-Regular.otf(0)/b/n}{}
+\DeclareFontShape{TU}{NotoSerifSC-Regular.otf(0)}{bx}{sc}{<->ssub * NotoSerifSC-Regular.otf(0)/b/n}{}
+
+% ============================================================================
+% TEMP-DISABLED for verification (will restore)
+% \xeCJKsetcharclass{"2014}{"2014}{1}
+% \xeCJKsetcharclass{"2026}{"2026}{1}
+\xeCJKDeclareCharClass{CJK}{"2460 -> "24FF}
+
+\let\oldtextcircled\textcircled
+\renewcommand{\textcircled}[1]{{\fontspec[Path=\fontdir]{\MyHeiTi}\oldtextcircled{#1}}}
+\AtBeginDocument{
+    \renewcommand{\textcircled}[1]{{\heiti\oldtextcircled{#1}}}
+}

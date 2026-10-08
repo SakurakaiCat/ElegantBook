@@ -8,6 +8,20 @@
 % -----------------------------------------------------------------------------
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{elegantbook}[2026/05/01 v4.7 ElegantBook document class]
+% -----------------------------------------------------------------------------
+% Fork modifications on top of upstream v4.7:
+%   * `monochrome` color scheme: print-safe black/gray for all theorem
+%     environments, exercise/note/proof icons, hyperlinks and listings.
+%   * Cover layouts: `\coverstyle{banner|side}` replaces the `device`
+%     option for the cover; side layout adds a vertical-text left column
+%     (set the CJK font via `\setvertfont`); `\mascot{}` cover field.
+%   * Footer promo hooks: `\footerpromo{}` / `\footerpromoplain{}` print a
+%     small line under the page number (empty by default).
+%   * Font/decoration substitutions for portability: texgyretermes font
+%     naming, bbding -> pifont \ding{46}, adforn -> diamond fallbacks.
+% The companion `series-skin/` directory holds the Tufte-like overlay
+% (geometry, quiet chrome, margin notes, framed theorem environments).
+% -----------------------------------------------------------------------------
 
 %%%
 \RequirePackage{kvoptions}
@@ -32,6 +46,7 @@
 \DeclareVoidOption{gray}{\ekv{color=gray}}
 \DeclareVoidOption{black}{\ekv{color=black}}
 \DeclareVoidOption{nocolor}{\ekv{color=none}}
+\DeclareVoidOption{monochrome}{\ekv{color=monochrome}}
 
 \DeclareVoidOption{chinese}{\ekv{scheme=chinese}}
 
@@ -121,6 +136,13 @@
   pdfborder={0 0 0},
   linktocpage
 }
+\ifdefstring{\ELEGANT@color}{monochrome}{
+  \hypersetup{
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black,
+  }
+}{\relax}
 \newif\ifELEGANT@Hy@later
   \@ifpackagelater{hyperref}{2022/05/16}
     {\ELEGANT@Hy@latertrue}
@@ -172,11 +194,11 @@
   \RequirePackage[scaled=.90]{helvet}
 \else
   \RequirePackage[no-math]{fontspec}
-  \setmainfont{TeXGyreTermesX}[
-    UprightFont = *-Regular ,
-    BoldFont = *-Bold ,
-    ItalicFont = *-Italic ,
-    BoldItalicFont = *-BoldItalic ,
+  \setmainfont{texgyretermes}[
+    UprightFont = *-regular ,
+    BoldFont = *-bold ,
+    ItalicFont = *-italic ,
+    BoldItalicFont = *-bolditalic ,
     Extension = .otf ,
     Scale = 1.0]
     
@@ -309,6 +331,14 @@
   \definecolor{second}{RGB}{0,0,0}%
   \definecolor{third}{RGB}{0,0,0}%
 }{\relax}
+\ifdefstring{\ELEGANT@color}{monochrome}{
+  \definecolor{structurecolor}{RGB}{0,0,0}
+  \definecolor{main}{RGB}{0,0,0}%
+  \definecolor{second}{RGB}{0,0,0}%
+  \definecolor{third}{RGB}{0,0,0}%
+  \definecolor{winered}{RGB}{0,0,0}
+  \colorlet{coverlinecolor}{black}
+}{\relax}
 
 %green color
 \definecolor{structure1}{RGB}{0,120,2}%
@@ -339,6 +369,7 @@
 % corlor definition
 \definecolor{winered}{rgb}{0.5,0,0}
 \definecolor{bule}{RGB}{18,29,57}
+\definecolor{coverbar}{RGB}{180,50,50}
 \colorlet{coverlinecolor}{second}
 
 
@@ -358,10 +389,24 @@
 \newcommand{\institute}[1]{\gdef\@institute{#1}}
 \newcommand{\version}[1]{\gdef\@version{#1}}
 \newcommand{\extrainfo}[1]{\gdef\@extrainfo{#1}}
+\newcommand{\mascot}[1]{\gdef\@mascot{#1}}
 
 \RequirePackage{mwe}
 \newcommand{\logo}[1]{\gdef\@logo{#1}}
 \newcommand{\cover}[1]{\gdef\@cover{#1}}
+\newcommand{\coverstyle}[1]{\gdef\@coverstyle{#1}}
+\coverstyle{banner}
+
+% Vertical CJK font family for the side cover layout: true vertical typesetting
+% via OpenType vertical glyph variants. Fonts are NOT bundled with the class —
+% set up your own from the document preamble, e.g.
+%   \setvertfont[Path=fonts/, RawFeature={vertical}, AutoFakeBold=2.5]{MySerif.ttf}
+% Without a setup, \vertfont falls back to the current CJK roman (upright, no
+% vertical variants); the side cover still builds.
+\newcommand{\setvertfont}[2][]{%
+  \ifdefined\vertfont\let\vertfont\undefined\fi
+  \newCJKfontfamily\vertfont[#1]{#2}}
+\providecommand{\vertfont}{}
 
 \newcommand{\question}[1]{{\par\citshape #1}\\[0.2ex]}
 
@@ -889,7 +934,7 @@
 %%define the 
 %%definition theorem postulate axiom corollary lemma proposition 
 %%and proof environment
-\RequirePackage{pifont,manfnt,bbding}
+\RequirePackage{pifont,manfnt}
 \RequirePackage[many]{tcolorbox}
 % \newlength{\normalparindent}
 % \setlength{\normalparindent}{\parindent}
@@ -953,6 +998,16 @@
       overlay unbroken and last={
         \node[anchor=south east, outer sep=0pt] at (\linewidth-width,0) {
           \textcolor{third}{$\spadesuit$}};}},
+    % Monochrome overrides for fancy mode
+    monocromestyle/.style={
+      common,
+      colframe=black,
+      colback=gray!5,
+      colbacktitle=gray!20,
+      coltitle=black,
+      overlay unbroken and last={
+        \node[anchor=south east, outer sep=0pt] at (\linewidth-width,0) {
+          \textcolor{black}{$\square$}};}},
     ELEGANT@title/.code n args={2}
       {
 
@@ -1032,6 +1087,16 @@
   \ELEGANT@newtheorem{corollary}{cor}{thmstyle}
   \ELEGANT@newtheorem{lemma}{lem}{thmstyle}
   \ELEGANT@newtheorem{proposition}{pro}{prostyle}
+  % Monochrome override for fancy mode theorem environments
+  \ifdefstring{\ELEGANT@color}{monochrome}{
+    \ELEGANT@newtheorem{theorem}{thm}{monocromestyle}
+    \ELEGANT@newtheorem{definition}{def}{monocromestyle}
+    \ELEGANT@newtheorem{postulate}{pos}{monocromestyle}
+    \ELEGANT@newtheorem{axiom}{axi}{monocromestyle}
+    \ELEGANT@newtheorem{corollary}{cor}{monocromestyle}
+    \ELEGANT@newtheorem{lemma}{lem}{monocromestyle}
+    \ELEGANT@newtheorem{proposition}{pro}{monocromestyle}
+  }{\relax}
 }{\relax}
 
 
@@ -1169,7 +1234,7 @@
 \newenvironment{exercise}[1][]{
   \refstepcounter{exer}
   \par\noindent\makebox[-3pt][r]{
-    \scriptsize\color{red!90}\HandPencilLeft\quad}
+    \scriptsize\color{red!90}\ding{46}\quad}
     \textbf{\color{main}{\exercisename} \theexer #1 }\rmfamily}{
     \par\ignorespacesafterend}
 
@@ -1200,6 +1265,37 @@
 \newenvironment{property}{\par\noindent\textbf{\color{third}\propertyname} \citshape}{\par}
 \newenvironment{custom}[1]{\par\noindent\textbf{\color{third} #1} \citshape}{\par}
 
+% ----- Monochrome overrides for environments -----
+\ifdefstring{\ELEGANT@color}{monochrome}{
+  % Redefine exercise icon to black
+  \renewenvironment{exercise}[1][]{
+    \refstepcounter{exer}
+    \par\noindent\makebox[-3pt][r]{
+      \scriptsize\color{black}\ding{46}\quad}
+      \textbf{\color{black}{\exercisename} \theexer #1 }\rmfamily}{
+      \par\ignorespacesafterend}
+  % Redefine note icon to black
+  \renewenvironment{note}{
+    \par\noindent\makebox[-3pt][r]{
+      \scriptsize\color{black}\textdbend\quad}
+      \textbf{\color{black}\notename} \citshape}{\par}
+  % Redefine proof with Q.E.D. symbol
+  \renewenvironment{proof}{
+    \par\noindent\textbf{\color{black}\proofname\;}
+    \color{black}\cfs}{
+    \hfill$\square$\quad
+    \par}
+  % Redefine remark to black
+  \renewenvironment{remark}{\noindent\textbf{\color{black}\remarkname}}{\par}
+  % Redefine assumption, conclusion, property, custom to black
+  \renewenvironment{assumption}{\par\noindent\textbf{\color{black}\assumptionname} \citshape}{\par}
+  \renewenvironment{conclusion}{\par\noindent\textbf{\color{black}\conclusionname} \citshape}{\par}
+  \renewenvironment{property}{\par\noindent\textbf{\color{black}\propertyname} \citshape}{\par}
+  \renewenvironment{custom}[1]{\par\noindent\textbf{\color{black} #1} \citshape}{\par}
+  % Redefine solution to black
+  \renewenvironment{solution}{\par\noindent\textbf{\color{black}\solutionname} \citshape}{\par}
+}{\relax}
+
 \RequirePackage{multicol}
 \tcbset{
   introductionsty/.style={
@@ -1229,7 +1325,9 @@
     \end{multicols}
   \end{tcolorbox}}
 
-\RequirePackage{adforn}
+% adforn package not available; using simple symbols instead
+\newcommand{\elegantflourishleft}{$\diamond$}
+\newcommand{\elegantflourishright}{$\diamond$}
 
 \newenvironment{problemset}[1][\xchaptertitle~\exercisename]{
   \vspace*{10pt}
@@ -1237,7 +1335,7 @@
     \phantomsection\addcontentsline{toc}{section}{\texorpdfstring{\xchaptertitle~\exercisename}{\exercisename}}
     % \markboth{#1}{\rightmark}
     \markright{#1}
-    \textcolor{structurecolor}{\Large\bfseries\adftripleflourishleft~#1~\adftripleflourishright}
+    \textcolor{structurecolor}{\Large\bfseries\elegantflourishleft~#1~\elegantflourishright}
   \end{center}
   \begin{enumerate}}{
   \end{enumerate}}
@@ -1259,7 +1357,28 @@
 \fancyhf{}
 
 
-\fancyfoot[c]{\color{structurecolor}\small\thepage}
+% ----- Footer promo line (hook) -----
+% \footerpromo{...} prints a small line under the page number in the default
+% footer; \footerpromoplain{...} is the variant used when \NoWatermark is
+% defined. Both are empty by default (footer shows the page number only).
+% Must be defined in the class body (fancyfoot uses \makeatletter names).
+\newcommand{\footerpromo}[1]{\gdef\@footerpromo{#1}}
+\newcommand{\footerpromoplain}[1]{\gdef\@footerpromoplain{#1}}
+\footerpromo{}
+\footerpromoplain{}
+\fancyfoot[C]{%
+  \color{structurecolor}%
+  \small\thepage
+  \ifdefined\NoWatermark
+    \expandafter\ifx\csname @footerpromoplain\endcsname\empty\else
+      \\[-2pt]\scriptsize\@footerpromoplain
+    \fi
+  \else
+    \expandafter\ifx\csname @footerpromo\endcsname\empty\else
+      \\[-2pt]\scriptsize\@footerpromo
+    \fi
+  \fi
+}
 \if@twoside
   \fancyhead[EL]{\color{structurecolor}\cnormal\leftmark}
   \fancyhead[OR]{\color{structurecolor}\cnormal\rightmark}
@@ -1271,7 +1390,24 @@
 \pagestyle{fancy}
 \renewcommand{\headrulewidth}{1pt}
 % \renewcommand{\headrule}{}
-\fancypagestyle{plain}{\renewcommand{\headrulewidth}{0pt}\fancyhf{}\renewcommand{\headrule}{}}
+\fancypagestyle{plain}{%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyhf{}%
+  \renewcommand{\headrule}{}%
+  \fancyfoot[C]{%
+    \color{structurecolor}%
+    \small\thepage
+    \ifdefined\NoWatermark
+      \expandafter\ifx\csname @footerpromoplain\endcsname\empty\else
+        \\[-2pt]\scriptsize\@footerpromoplain
+      \fi
+    \else
+      \expandafter\ifx\csname @footerpromo\endcsname\empty\else
+        \\[-2pt]\scriptsize\@footerpromo
+      \fi
+    \fi
+  }%
+}
 \renewcommand{\sectionmark}[1]{\markright{\thesection\, #1}{}}
 \renewcommand{\chaptermark}[1]{\markboth{\IfAppendix{\appendixname\;\thechapter\, #1}{\xchaptertitle\, #1}}{}}
 
@@ -1282,66 +1418,111 @@
 \begin{titlepage}
   \newgeometry{margin = 0in}
   \parindent=0pt
-  \ifdefstring{\ELEGANT@device}{normal}{
+  \ifdefstring{\@coverstyle}{side}{%
+    % ----- Side layout: left vertical text, middle bar, right image -----
+    \noindent%
+    \begin{minipage}[c]{0.25\paperwidth}
+      \centering
+      \rotatebox[origin=c]{-90}{%
+        \parbox[c][0.25\paperwidth]{0.75\paperheight}{%
+          \centering
+          \vertfont
+          \bfseries\fontsize{40}{48}\selectfont
+            \ifcsname @title\endcsname \@title \fi
+          \par\vspace{1.5em}
+          {\color{darkgray}\bfseries\fontsize{24}{30}\selectfont
+            \ifcsname @subtitle\endcsname\@subtitle\\[1ex]\fi}
+          \par\vspace{1.5em}
+          \color{gray}\fontsize{14}{18}\selectfont
+          {\renewcommand{\arraystretch}{0.618}
+          \begin{tabular}{l}
+            \ifx\@author\empty\else\authorname\cnormal\@author\\ \fi
+            \ifcsname @institute\endcsname \institutename \cnormal\@institute\\ \fi
+            \ifx\@date\empty\else\datename\cnormal\@date \\ \fi
+            \ifcsname @version\endcsname \cnormal\versionname\@version\\ \fi
+            \ifcsname @bioinfo\endcsname \cnormal\@bioinfo\\ \fi
+          \end{tabular}}
+        }%
+      }
+    \end{minipage}%
+    \hfill
+    \raisebox{-0.5\height}{%
+      {\color{coverbar}\vrule \@width 0.25in \@height \paperheight}%
+    }%
+    \hfill
+    \begin{minipage}[c][\paperheight]{0.70\paperwidth}
+      \centering
+      \vfill
+      \ifcsname @cover\endcsname
+        \includegraphics[height=\paperheight, keepaspectratio]{\@cover}
+      \else
+        \includegraphics[height=\paperheight, keepaspectratio]{example-image}
+      \fi
+      \vfill
+    \end{minipage}%
+  }{%
+    % ----- Banner layout (default): top image + bottom title -----
+    % Horizontal header block: image fills width, clipped to banner height
     \ifcsname @cover\endcsname
-      \includegraphics[width=\linewidth]{\@cover}
+      \begin{tikzpicture}
+        \clip (0,0) rectangle (\paperwidth,0.38\paperheight);
+        \node[anchor=north west,inner sep=0pt] at (0,0.38\paperheight) {%
+          \includegraphics[width=\paperwidth]{\@cover}%
+        };
+      \end{tikzpicture}%
     \else
-      \includegraphics[width=\linewidth]{example-image}
+      \includegraphics[width=\paperwidth,height=0.38\paperheight,keepaspectratio]{example-image}
     \fi
-  }{\relax}
-  \ifdefstring{\ELEGANT@device}{pad}{
-    \ifcsname @cover\endcsname
-      \includegraphics[trim=0 26bp 0 26bp,clip=true, width=\linewidth]{\@cover}
-    \else
-      \includegraphics[trim=0 26bp 0 26bp,clip=true, width=\linewidth]{example-image}
-    \fi
-  }{\relax}
-  \vskip-\baselineskip
-  {\color{coverlinecolor}\hrule \@width \linewidth \@height .5in}
-  \vfill
-  \vskip-2ex
-  \hspace{2em}
-  \parbox{0.8\textwidth}{
-    \bfseries\Huge 
-      \ifcsname @title\endcsname \@title \fi
-    \par}
-  \vfill
-  \vspace{-1.0cm}
-  \setstretch{2.5}
-  \hspace{2.5em}
-  \begin{minipage}[c]{0.67\linewidth}
-    {\color{darkgray}\bfseries\Large
-      \ifcsname @subtitle\endcsname\@subtitle\\[2ex]\fi}
-    \color{gray}\normalsize
-    {\renewcommand{\arraystretch}{0.618}
-    \begin{tabular}{l}
-      % \ifcsname @author\endcsname \authorname \@author\\\fi
-      \ifx\@author\empty\else\authorname\cnormal\@author\\ \fi
-      \ifcsname @institute\endcsname \institutename \cnormal\@institute\\ \fi
-      % \ifcsname @date\endcsname  \@date\\\fi
-      \ifx\@date\empty\else\datename\cnormal\@date \\ \fi
-      \ifcsname @version\endcsname \cnormal\versionname\@version\\ \fi
-      \ifcsname @bioinfo\endcsname \cnormal\@bioinfo\\ \fi
-    \end{tabular}}
-  \end{minipage}
-  \begin{minipage}[c]{0.27\linewidth}
-  \begin{tikzpicture}[remember picture,overlay]
-    \begin{pgfonlayer}{background}
-      \node[opacity=0.8,
-            anchor=south east,
-            outer sep=0pt,
-            inner sep=0pt] at ($(current page.south east) +(-0.8in,1.5in)$) {
-              \ifcsname @logo\endcsname\includegraphics[width=4.2cm]{\@logo}\fi};
-    \end{pgfonlayer}
-  \end{tikzpicture}
-  \end{minipage}
-  \vfill
-  \begin{center}
-    \setstretch{1.3}
-    \parbox[t]{0.7\textwidth}{\centering \citshape 
-      \ifcsname @extrainfo\endcsname\@extrainfo\fi}
-  \end{center}
-  \vfill
+    \vskip-\baselineskip
+    {\color{coverbar}\hrule \@width \linewidth \@height .5in}
+    \vfill
+    \vskip-2ex
+    \hspace{2em}
+    \parbox{0.8\textwidth}{
+      \bfseries\fontsize{40}{48}\selectfont
+        \ifcsname @title\endcsname \@title \fi
+      \par}
+    \vfill
+    \vspace{-1.0cm}
+    \setstretch{2.5}
+    \hspace{2.5em}
+    \begin{minipage}[c]{0.67\linewidth}
+      {\color{darkgray}\bfseries\fontsize{24}{30}\selectfont
+        \ifcsname @subtitle\endcsname\@subtitle\\[2ex]\fi}
+      \color{gray}\fontsize{14}{18}\selectfont
+      {\renewcommand{\arraystretch}{0.618}
+      \begin{tabular}{l}
+        \ifx\@author\empty\else\authorname\cnormal\@author\\ \fi
+        \ifcsname @institute\endcsname \institutename \cnormal\@institute\\ \fi
+        \ifx\@date\empty\else\datename\cnormal\@date \\ \fi
+        \ifcsname @version\endcsname \cnormal\versionname\@version\\ \fi
+        \ifcsname @bioinfo\endcsname \cnormal\@bioinfo\\ \fi
+      \end{tabular}}
+    \end{minipage}
+    \begin{minipage}[c]{0.27\linewidth}
+    \begin{tikzpicture}[remember picture,overlay]
+      \begin{pgfonlayer}{background}
+        \node[opacity=0.8,
+              anchor=south east,
+              outer sep=0pt,
+              inner sep=0pt] at ($(current page.south east) +(-0.8in,1.5in)$) {
+                \ifcsname @logo\endcsname\includegraphics[width=4.2cm]{\@logo}\fi};
+      \end{pgfonlayer}
+    \end{tikzpicture}
+    \end{minipage}
+    \vfill
+    \begin{center}
+      {\color{gray}\fontsize{11}{14}\selectfont
+        \ifcsname @mascot\endcsname\cnormal\@mascot\fi}
+    \end{center}
+    \vfill
+    \begin{center}
+      \setstretch{1.3}
+      \parbox[t]{0.7\textwidth}{\centering \citshape 
+        \ifcsname @extrainfo\endcsname\@extrainfo\fi}
+    \end{center}
+    \vfill
+  }
 \end{titlepage}
 \restoregeometry
 \thispagestyle{empty}}
@@ -1378,6 +1559,14 @@
   columns=flexible,
   % backgroundcolor=\color{lightgrey}
 }
+
+\ifdefstring{\ELEGANT@color}{monochrome}{
+  \lstset{
+    texcsstyle=*\color{black},
+    keywordstyle=\color{black},
+    emphstyle={\color{black}},
+  }
+}{\relax}
 
 \newcommand\bmmax{0}
 \RequirePackage{bm}

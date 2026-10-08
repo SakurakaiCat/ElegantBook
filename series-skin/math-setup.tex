@@ -1,0 +1,46 @@
+% Math-specific packages and helpers.
+% Math font: LaTeX 默认数学字体. unicode-math 在未指定 \setmathfont 时使用
+% Latin Modern Math, 即 Computer Modern 数学字体的 OpenType 版本, 与 LaTeX
+% 默认的数学公式外观一致.
+% unicode-math must load after amsmath/mathtools (already loaded by the class
+% and packages.tex) and before cancel/extarrows. \mathbb/\mathcal/\mathfrak pull
+% from the OpenType math ranges.
+\usepackage{unicode-math}
+% amsbsy's \boldsymbol uses classic mathchar machinery that breaks under
+% unicode-math ("Extended mathchar used as mathchar"); \symbf is the native
+% OpenType-math bold-symbol command. The 8 body usages all take simple
+% symbols (\boldsymbol{x}, \boldsymbol{e}_1, ...), so the mapping is lossless.
+\renewcommand{\boldsymbol}[1]{\symbf{#1}}
+
+\usepackage{cancel}
+\usepackage{extarrows}
+
+\numberwithin{equation}{chapter}
+\renewcommand{\theequation}{\thechapter-\arabic{equation}}
+
+\allowdisplaybreaks[1]
+\binoppenalty  = 800
+\relpenalty    = 600
+
+\setlength{\lineskiplimit}{3pt}
+\setlength{\lineskip}{3pt}
+
+\newcommand{\resmark}[1]{%
+  \resizebox{\linewidth}{!}{$\displaystyle #1$}%
+}
+
+\newenvironment{fitequation}{%
+  \begin{equation}%
+    \begin{adjustbox}{max width=\linewidth}%
+}{%
+    \end{adjustbox}%
+  \end{equation}%
+}
+
+\newenvironment{fitequation*}{%
+  \begin{equation*}%
+    \begin{adjustbox}{max width=\linewidth}%
+}{%
+    \end{adjustbox}%
+  \end{equation*}%
+}

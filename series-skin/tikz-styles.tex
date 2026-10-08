@@ -1,0 +1,98 @@
+% ============================================================================
+% Monochrome TikZ / pgfplots styles for the series skin
+% Black-on-white Cartesian textbook look (prints well in grayscale).
+% Load AFTER packages.tex (needs tikz + pgfplots + arrows.meta).
+% Does NOT style cover/UI chrome (those use remember picture, overlay).
+% ============================================================================
+
+\tikzset{
+  % --- Global defaults (例 18.8 配图) ---
+  every picture/.style={
+    font=\small,
+  },
+  >=Stealth,
+  % --- Coordinate axes ---
+  axis/.style={
+    ->,
+    black!60,
+  },
+  tick label/.style={
+    font=\tiny,
+  },
+  % --- Primary geometry ---
+  geo/.style={
+    thick,
+    black,
+  },
+  curve/.style={
+    thick,
+    black,
+    samples=100,
+  },
+  lineStyle/.style={
+    thick,
+    black,
+  },
+  shapeStyle/.style={
+    thick,
+    black,
+  },
+  ellipseStyle/.style={
+    thick,
+    black,
+  },
+  % --- Guides / construction ---
+  guide/.style={
+    dotted,
+    black!70,
+  },
+  construct/.style={
+    thin,
+    black!55,
+  },
+  % --- Region fills ---
+  region/.style={
+    fill=black!10,
+    fill opacity=0.8,
+  },
+  % --- Point markers ---
+  dot/.style={
+    fill,
+    circle,
+    inner sep=1.5pt,
+  },
+  openDot/.style={
+    circle,
+    draw,
+    fill=white,
+    inner sep=1.5pt,
+  },
+  % --- Directed segments / vectors (monochrome hierarchy) ---
+  vector/.style={
+    ->,
+    thick,
+    black,
+  },
+  vector secondary/.style={
+    ->,
+    thick,
+    black!55,
+  },
+  vector tertiary/.style={
+    ->,
+    thick,
+    black!35,
+  },
+}
+
+% pgfplots: match Cartesian monochrome textbook look
+\pgfplotsset{
+  every axis/.append style={
+    axis lines=middle,
+    axis line style={->, black!60},
+    tick label style={font=\tiny},
+    label style={font=\small},
+    legend style={font=\small},
+    every axis plot/.append style={thick},
+  },
+}

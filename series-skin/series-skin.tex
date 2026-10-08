@@ -1,0 +1,22 @@
+% ============================================================================
+% series-skin.tex — one-line loader for the whole series-skin stack
+% Input from your document preamble:
+%   \input{series-skin/series-skin.tex}
+% (Adjust the prefix if you keep the directory elsewhere; all internal
+% references are relative to your project root, so TEXINPUTS also works.)
+% Requires: elegantbook.cls (this fork's version), XeLaTeX, and user-supplied
+% CJK/Latin fonts under assets/fonts/ (see font-setup.tex).
+% ============================================================================
+\input{series-skin/design-tokens.tex}
+\input{series-skin/font-setup.tex}
+\input{series-skin/packages.tex}
+\input{series-skin/math-setup.tex}
+\input{series-skin/layout-setup.tex}
+\input{series-skin/tikz-styles.tex}
+\input{series-skin/cref-zh.tex}
+\input{series-skin/tufte-skin.tex}
+\input{series-skin/chapter-plate.tex}
+\input{series-skin/environments.tex}
+
+% Quiet hyperlinks (override or extend with your own PDF metadata afterwards)
+\hypersetup{hidelinks}

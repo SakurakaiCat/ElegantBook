@@ -1,0 +1,684 @@
+% ============================================================================
+% Custom environments preserved from the original AJbook class
+% Adapted for use with the ElegantBook template
+% ============================================================================
+
+% ============================================================================
+% Dynamic watermark (opt-in mechanism)
+% Enable from the document preamble with
+%   \SeriesWatermarkSetup{<prefix>}{<count>}
+% where images <prefix>1.png ... <prefix><count>.png exist (raster images:
+% inherently non-selectable in PDF viewers). Placement is deterministic per
+% page — count (5..12), golden-angle positions and radii derive from the
+% page number, image picked round-robin. Defining \NoWatermark before this
+% point disables the mechanism (\SeriesWatermarkSetup becomes a no-op).
+% ============================================================================
+\RequirePackage{eso-pic}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+\RequirePackage{xfp}
+\makeatletter
+
+\ifdefined\NoWatermark
+  % Watermark disabled.
+  \newcommand{\SeriesWatermarkSetup}[2]{%
+    \typeout{series-skin: \string\NoWatermark defined; watermark setup ignored}}
+\else
+\newcommand{\SeriesWatermarkSetup}[2]{%
+  \gdef\series@wm@prefix{#1}%
+  \gdef\series@wm@n{#2}%
+  \AddToShipoutPictureBG{\SeriesDynamicWatermarks}%
+}
+% Dynamic watermark formula (page-dependent, deterministic + pseudo-random):
+%   N(p)   = (p*7+3) mod 8 + 5               — count, 5 to 12
+%   θ(p,i) = (p*137 + i*72) mod 360          — angle in degrees (golden angle)
+%   r(p,i) = ((p*13 + i*17) mod 7) * 1.5 + 2 — radius 2..11 cm from center
+%   pos    = (r*cos θ, r*sin θ) relative to page center
+%   image  = <prefix>((p+i) mod count + 1).png
+\DeclareRobustCommand{\SeriesDynamicWatermarks}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \edef\ajpage{\arabic{page}}%
+    \edef\ajnwm{\fpeval{round(\ajpage*7+3-8*floor((\ajpage*7+3)/8)+5)}}%
+    \foreach \aji in {1,...,\ajnwm} {%
+      \edef\ajangle{\fpeval{\ajpage*137+(\aji-1)*72-360*floor((\ajpage*137+(\aji-1)*72)/360)}}%
+      \edef\ajradius{\fpeval{(\ajpage*13+(\aji-1)*17-7*floor((\ajpage*13+(\aji-1)*17)/7))*1.5+2}}%
+      \edef\ajxshift{\fpeval{\ajradius*cosd(\ajangle)}}%
+      \edef\ajyshift{\fpeval{\ajradius*sind(\ajangle)}}%
+      \edef\ajimgidx{\fpeval{round(\ajpage+\aji-1-\series@wm@n*floor((\ajpage+\aji-1)/\series@wm@n)+1)}}%
+      \edef\ajwmfile{\series@wm@prefix\ajimgidx.png}%
+      \node[anchor=center, opacity=0.10]
+        at ([xshift=\ajxshift cm, yshift=\ajyshift cm]current page.center)
+        {\includegraphics[width=0.18\paperwidth]{\ajwmfile}};%
+    }%
+  \end{tikzpicture}%
+}
+\fi
+\makeatother
+
+% ============================================================================
+% 选择题选项统一环境
+% ============================================================================
+% 替代正文里手写的 \vspace{0.35em}\noindent\textbf{A.} 选项块；
+% 全书选项的缩进与行距统一由这里控制，正文不再出现逐题手调间距。
+\newlist{choices}{enumerate}{1}
+\setlist[choices]{
+  label = \textbf{\Alph*.},
+  labelsep = 0.5em,
+  leftmargin = *,
+  itemsep = 0.35em,
+  topsep = 0.4em,
+  parsep = 0pt,
+  partopsep = 0pt
+}
+
+% ============================================================================
+% Redefine example, remark, exercise environments to support list content
+% (amsthm-based, compatible with original project usage)
+% Task 7: remark/hint sidenote culture; quiet ink chrome; exercise pencil → InkBrown
+% ============================================================================
+\let\example\relax
+\let\endexample\relax
+\let\remark\relax
+\let\endremark\relax
+\let\exercise\relax
+\let\endexercise\relax
+
+% Example environment with independent counter (preserving original behavior)
+\newtheoremstyle{examplestyle}{3pt}{3pt}{\normalfont}{0pt}{\bfseries\color{main}}{}{0.5em}{\thmname{#1}~\thmnumber{#2}~\thmnote{(#3)}}
+\theoremstyle{examplestyle}
+\newtheorem{example}{\examplename}[chapter]
+
+% --- Remark: short → margin sidenote; long → quiet main (remark*) ---
+% 25mm 边注栏在 footnotesize 下每行约 8 个汉字。
+% 超过 64 个 token（约八行）、多段或含展示环境的注释放回正文栏。
+% token 计数采用保守上限；remark* 可显式指定正文形式。
+\newcounter{remark}[chapter]
+\renewcommand{\theremark}{\thechapter.\arabic{remark}}
+
+\ExplSyntaxOn
+\bool_new:N \l_series_remark_long_bool
+\int_new:N \l_series_remark_nl_int
+
+\str_new:N \l_series_remark_body_str
+
+\cs_new_protected:Npn \series_remark_classify:n #1
+  {
+    % +b body is tokenized; length ≈ CJK char count via token count.
+    % Structure markers via detokenized string (space after csnames).
+    \bool_set_false:N \l_series_remark_long_bool
+    \int_set:Nn \l_series_remark_nl_int { \tl_count:n {#1} }
+    \int_compare:nNnT { \l_series_remark_nl_int } > { 64 }
+      { \bool_set_true:N \l_series_remark_long_bool }
+    \bool_if:NF \l_series_remark_long_bool
+      {
+        \str_set:Nx \l_series_remark_body_str { \tl_to_str:n {#1} }
+        \exp_args:NnV \regex_match:nnTF
+          {
+            \\begin\ \{
+            ( equation | align | alignat | flalign | gather | multline |
+              itemize | enumerate | compactitem | compactenum |
+              tikzpicture | multicols | choices | figure | table | tabular | tabularx )
+            \*?
+            \}
+            |
+            \\\[
+            |
+            \\par
+          }
+          \l_series_remark_body_str
+          { \bool_set_true:N \l_series_remark_long_bool }
+          { }
+      }
+  }
+
+\cs_new_protected:Npn \series_remark_head:n #1
+  {
+    \textbf
+      {
+        \remarkname~\theremark
+        \tl_if_novalue:nF {#1} { \ (#1) }
+      }
+  }
+
+\cs_new_protected:Npn \series_remark_margin:nn #1 #2
+  {
+    \refstepcounter{remark}
+    \sidenote
+      {
+        \series_remark_head:n {#1}
+        \par
+        #2
+      }
+  }
+
+\cs_new_protected:Npn \series_remark_main:nn #1 #2
+  {
+    \refstepcounter{remark}
+    \begin{tcolorbox}[series-gray-frame]
+    \use:c { series@makefloatslocal }
+    {
+      \footnotesize
+      \color{InkMuted}
+      \series_remark_head:n {#1}
+    }
+    \par\nobreak
+    {
+      \footnotesize
+      \color{InkMuted}
+      \raggedright
+      #2
+      \par
+    }
+    \end{tcolorbox}
+  }
+
+\cs_new_protected:Npn \series_remark_auto:nn #1 #2
+  {
+    \series_remark_classify:n {#2}
+    \bool_if:NTF \l_series_remark_long_bool
+      { \series_remark_main:nn {#1} {#2} }
+      { \series_remark_margin:nn {#1} {#2} }
+  }
+
+% Document-level aliases (underscore names only valid under ExplSyntaxOn)
+\cs_set_eq:NN \SeriesRemarkAuto \series_remark_auto:nn
+\cs_set_eq:NN \SeriesRemarkMain \series_remark_main:nn
+\ExplSyntaxOff
+
+\NewDocumentEnvironment{remark}{o +b}{%
+  \SeriesRemarkAuto{#1}{#2}%
+}{}
+
+% Force main-column quiet form (long remarks / manual override)
+\NewDocumentEnvironment{remark*}{o +b}{%
+  \SeriesRemarkMain{#1}{#2}%
+}{}
+
+% ============================================================================
+% Unified exercise counter (shared by exercise, exercises, Exercises)
+% ============================================================================
+\newcounter{bookexercise}[chapter]
+\renewcommand{\thebookexercise}{\thechapter.\arabic{bookexercise}}
+\renewcommand{\theHbookexercise}{\thechapter.\arabic{bookexercise}}
+
+% Per-chapter counter for exsol blocks, kept in sync with bookexercise
+% (1:1 correspondence between exercises and exsol blocks within each chapter).
+\newcounter{exsolcount}[chapter]
+
+% Exercise environment (supporting lists, with pencil icon)
+\newtheoremstyle{exercisestyle}{3pt}{3pt}{\normalfont}{0pt}{\bfseries\color{main}}{}{0.5em}{\makebox[-3pt][r]{\scriptsize\color{InkBrown}\ding{46}\quad}\thmname{#1}~\thmnumber{#2}~\thmnote{#3}}
+\theoremstyle{exercisestyle}
+\newtheorem{exercise}[bookexercise]{\exercisename}
+
+% ============================================================================
+% Proof environment with end-of-proof symbol
+% Optional note renders in parentheses: \begin{proof}[柯西归纳法] → 证明 (柯西归纳法)
+% (elegantbook.cls defines proof without an optional argument, so a [note]
+%  leaked into the body as literal square brackets. Consuming it here and
+%  wrapping it in parentheses matches the amsthm \thmnote{(#3)} convention.)
+% ============================================================================
+\let\proof\relax
+\let\endproof\relax
+
+\NewDocumentEnvironment{proof}{o}{%
+    \par\vspace{0.5em}\noindent
+    \textbf{\color{second}\proofname\IfValueT{#1}{ (#1)}\;}%
+    \color{black!90}\cfs
+}{%
+    \hfill$\square$\quad
+    \par\vspace{0.5em}%
+}
+
+% ============================================================================
+% Property environment: accept optional note in parentheses
+% (elegantbook.cls defines property without an optional argument; same leak as
+%  proof. Override here — loaded after the class, so this wins over both the
+%  color-mode and monochrome-mode definitions in the class.)
+% Wrapped in the gray solid frame inline (xparse environments cannot be
+%  re-wrapped via \let + \RenewDocumentEnvironment — that recurses through
+%  xparse's shared internals).
+% ============================================================================
+\let\property\relax
+\let\endproperty\relax
+\NewDocumentEnvironment{property}{o}{%
+    \csname series@thmcheck\endcsname
+    \begin{tcolorbox}[series-gray-frame]
+    \csname series@makefloatslocal\endcsname
+    \par\noindent\textbf{\color{black}\propertyname\IfValueT{#1}{ (#1)}} \citshape
+}{%
+    \par
+    \end{tcolorbox}%
+    \csname series@thmmark\endcsname{property}%
+}
+
+% ============================================================================
+% Exercise environments (including two-column layouts)
+% ============================================================================
+
+% Lower-case exercises environment for per-section exercises.
+% Uses the shared bookexercise counter (per-chapter, continues across blocks).
+\newenvironment{exercises}{%
+    \par\vspace{0.5em}%
+}{%
+    \par\vspace{0.5em}%
+}
+
+% Stack two exercises (single-column). Side-by-side minipages at
+% 0.47\textwidth are too narrow under series textwidth (~341pt / ~12cm).
+\newcommand{\exerciseentry}[2]{%
+    \exercisesingle{#1}%
+    \exercisesingle{#2}%
+}
+
+% Single-column exercise line (also used for odd leftovers).
+\newcommand{\exercisesingle}[1]{%
+    \par\vspace{0.8em}\noindent
+    \refstepcounter{bookexercise}%
+    \textbf{\thebookexercise.}\quad #1
+    \par
+}
+
+% ============================================================================
+% Original capitalized Exercises environment for chapter-end sets
+% Uses the shared bookexercise counter via \list + \usecounter.
+% ============================================================================
+\newenvironment{Exercises}{%
+    \markright{习题}
+    \addcontentsline{toc}{section}{习题}
+    \vspace{1em}\begin{center}
+        \Large\heiti 习题
+    \end{center}\vspace{0.7em}
+    \begin{small}%
+    \list{\textbf{\thebookexercise.}}{%
+        \usecounter{bookexercise}%
+        \renewcommand{\theHbookexercise}{Exercise.\thechapter.\arabic{bookexercise}}%
+    }%
+}{%
+    \endlist\end{small}%
+}
+
+% ============================================================================
+% Exercise solution collection (exsol): captures body, defers to appendix
+% exsol replaces solution for exercise contexts; solution stays for examples.
+% ============================================================================
+\makeatletter
+% Flag: true in noanswer mode (solutions not collected, appendix empty)
+\newif\ifseries@noanswer
+\AtBeginDocument{%
+  \@ifundefined{ELEGANT@result}{}{%
+    \ifdefstring{\ELEGANT@result}{noanswer}{%
+      \series@noanswertrue
+    }{}%
+  }%
+}
+
+% Capture chapter title for appendix section headers.
+% Only in mainmatter — backmatter chapters must not overwrite.
+\let\series@sol@orig@makechapterhead\@makechapterhead
+\def\@makechapterhead#1{%
+  \if@mainmatter
+    \expandafter\gdef\csname series@sol@chtitle@\the\c@chapter\endcsname{#1}%
+  \fi
+  \series@sol@orig@makechapterhead{#1}%
+}
+
+% Track which chapters have solutions (comma-separated list, built globally)
+\def\series@sol@chlist{}
+
+% Append solution body to per-chapter storage macro.
+% #1 = chapter number, #2 = prefix (already expanded by caller via \xdef),
+% #3 = solution body (stored unexpanded)
+\newtoks\series@sol@existing
+\newtoks\series@sol@prefixtoks
+\newtoks\series@sol@bodytoks
+\newcommand{\series@sol@append}[3]{%
+  \@ifundefined{series@sol@ch@#1}{%
+    \expandafter\gdef\csname series@sol@ch@#1\endcsname{}%
+    % First exsol for this chapter — add to list
+    \ifx\series@sol@chlist\empty
+      \xdef\series@sol@chlist{#1}%
+    \else
+      \xdef\series@sol@chlist{\series@sol@chlist,#1}%
+    \fi
+  }{}%
+  \begingroup
+    \series@sol@existing\expandafter\expandafter\expandafter{\csname series@sol@ch@#1\endcsname}%
+    \series@sol@prefixtoks\expandafter{#2}%
+    \series@sol@bodytoks{#3}%
+    \expandafter\xdef\csname series@sol@ch@#1\endcsname{%
+      \the\series@sol@existing%
+      \the\series@sol@prefixtoks%
+      \the\series@sol@bodytoks%
+    }%
+  \endgroup
+}
+
+% Emit collected solutions for a chapter.
+% #1 = chapter number
+\newcommand{\series@sol@emit}[1]{%
+  \@ifundefined{series@sol@ch@#1}{}{%
+    \csname series@sol@ch@#1\endcsname
+  }%
+}
+
+% exsol environment: captures body, stores in per-chapter macro, no body output.
+% Each stored block is prefixed with the exercise number and solution header (解)
+% matching the solution environment's visual style.
+\NewDocumentEnvironment{exsol}{+b}{%
+  \ifseries@noanswer\else
+    \refstepcounter{exsolcount}%
+    \xdef\series@sol@prefix{%
+      \noexpand\par\noexpand\noindent
+      \noexpand\textbf{\noexpand\color{main}\the\c@chapter.\the\c@exsolcount.}%
+      \noexpand\quad
+      \noexpand\textbf{\noexpand\color{main}\noexpand\solutionname}%
+      \noexpand\ \noexpand\citshape
+    }%
+    \series@sol@append{\thechapter}{\series@sol@prefix}{#1\par}%
+  \fi
+}{}
+
+% Public interface: emit collected exercise solutions for a chapter in the appendix.
+% #1 = chapter number (matching \thechapter at the point where exsol was used)
+\newcommand{\printexercisesolutions}[1]{\series@sol@emit{#1}}
+
+% Auto-emit all collected exercise solutions, grouped by chapter.
+% Creates \chapter{习题解答} only if any solutions exist.
+% Works for both full-book (main.tex) and single-volume builds — the chapter
+% list and titles are captured automatically from whatever chapters are included.
+\newcommand{\printallexercisesolutions}{%
+  \ifx\series@sol@chlist\empty
+  \else
+    \chapter{习题解答}
+    \@for\series@sol@curch:=\series@sol@chlist\do{%
+      \expandafter\series@sol@emitone\expandafter{\series@sol@curch}%
+    }%
+  \fi
+}
+\newcommand{\series@sol@emitone}[1]{%
+  \@ifundefined{series@sol@ch@#1}{}{%
+    \section*{第#1章 \csname series@sol@chtitle@#1\endcsname}%
+    \addcontentsline{toc}{section}{第#1章 \csname series@sol@chtitle@#1\endcsname}%
+    \csname series@sol@ch@#1\endcsname
+  }%
+}
+\makeatother
+
+% ============================================================================
+% Summary environment (ink-brown field; signals "wrap-up"; optional title)
+% Dark background with light text so the box reads as a section ending block.
+% ============================================================================
+\NewDocumentEnvironment{summary}{o}{%
+    \par\vspace{1em}
+    \begin{tcolorbox}[
+        colback=InkWash,
+        colframe=InkBrown,
+        coltitle=PaperIvory,
+        coltext=InkJoint,
+        title={\heiti\IfValueTF{#1}{#1}{本节小结}},
+        fonttitle=\bfseries\sffamily,
+        boxrule=0.5pt,
+        arc=1pt,
+        left=6pt,
+        right=6pt,
+        top=4pt,
+        bottom=4pt,
+    ]
+}{%
+    \end{tcolorbox}
+    \par\vspace{1em}
+}
+
+% ============================================================================
+% Chapter-opening study-tip box (quiet ink; optional title text)
+% ============================================================================
+\newtcolorbox{wenxintishi}[1][阅读提示]{
+    breakable,
+    enhanced,
+    width = \textwidth,
+    colback = PaperIvory,
+    colbacktitle = PaperIvory,
+    colframe = InkMuted,
+    boxrule=0.4pt,
+    coltitle = InkBrown,
+    coltext = InkBrown,
+    fonttitle = \sffamily\bfseries,
+    attach boxed title to top left = {yshift=-\tcboxedtitleheight/2,  xshift=\tcboxedtitlewidth/4},
+    boxed title style = {boxrule=0pt, colframe=PaperIvory, colback=PaperIvory},
+    before skip = 0.5cm,
+    top = 3mm,
+    bottom = 3mm,
+    title={#1}
+}
+
+% ============================================================================
+% Hint: short → margin; long → quiet main (same threshold as remark)
+% ============================================================================
+\ExplSyntaxOn
+\cs_new_protected:Npn \series_hint_auto:n #1
+  {
+    \series_remark_classify:n {#1}
+    \bool_if:NTF \l_series_remark_long_bool
+      {
+        \par\vspace{0.3em}
+        \noindent
+        {\footnotesize\color{InkMuted}\textbf{提示}}
+        \par\nobreak
+        {\footnotesize\color{InkMuted}\raggedright #1\par}
+        \par\vspace{0.2em}
+      }
+      {
+        \sidenote{\textbf{提示}\par #1}
+      }
+  }
+\cs_set_eq:NN \SeriesHintAuto \series_hint_auto:n
+\ExplSyntaxOff
+
+\NewDocumentEnvironment{hint}{+b}{%
+  \SeriesHintAuto{#1}%
+}{}
+
+% ============================================================================
+% Biography box helper (quiet ink)
+% ============================================================================
+\newcommand{\biographyBox}[3]{%
+    % #1: Person name
+    % #2: Birth and death years
+    % #3: Short biography text
+    \par\vspace{0.5em}
+    \begin{tcolorbox}[
+        colback=PaperIvory,
+        colframe=InkMuted,
+        coltitle=InkBrown,
+        coltext=InkBrown,
+        title={\textbf{#1} \, (#2)},
+        fonttitle=\bfseries,
+        boxrule=0.4pt,
+        arc=1pt,
+        left=5pt,
+        right=5pt,
+        top=3pt,
+        bottom=3pt
+    ]
+        #3
+    \end{tcolorbox}
+    \par\vspace{0.5em}
+}
+
+% ============================================================================
+% Epigraph helper (quiet muted ink)
+% ============================================================================
+\newcommand{\epigraph}[2]{%
+    % #1: Quoted text
+    % #2: Source or author
+    \par\vspace{1em}
+    \begin{flushright}
+        \begin{minipage}{0.7\textwidth}
+            \color{InkMuted}\rmfamily #1
+            \par\vspace{0.3em}
+            \raggedleft\color{InkMuted} --- #2
+        \end{minipage}
+    \end{flushright}
+    \par\vspace{1em}
+}
+
+% ============================================================================
+% Analysis-track block: content that needs limits/derivatives (Vol IV)
+% Lightweight (no tcolorbox body) so floats/figures remain legal.
+% ============================================================================
+\NewDocumentEnvironment{analysispath}{O{延伸讨论}}{%
+  \par\vspace{0.7em}%
+  \noindent{\sffamily\bfseries\small\color{InkBrown} #1}\par\nobreak
+  \vspace{0.35em}%
+  \ignorespaces
+}{%
+  \par\vspace{0.25em}%
+  \vspace{0.5em}%
+}
+
+% ============================================================================
+% Hollow black-white rectangular frame for theorem-like environments
+% Wraps existing amsthm environments with tcolorbox; preserves counters/labels.
+% Adjacency check: warns when two theorem-like environments are back-to-back.
+% ============================================================================
+\makeatletter
+
+% --- Shared frame style: black outline, white (hollow) interior, sharp corners ---
+% Unbreakable: a theorem-like box must stay on a single page. With breakable
+% removed, tcolorbox treats the box as one unit; when it does not fit at the
+% bottom of the current page the page breaker moves it whole to the next page
+% instead of splitting it mid-statement. (The wrapped environments hold short
+% statements, not proofs, so a box taller than a full page is not a concern.)
+\tcbset{
+  series-thm-frame/.style={
+    colframe=black, colback=white, coltext=black,
+    boxrule=0.8pt, arc=0pt, outer arc=0pt,
+    left=10pt, right=10pt, top=8pt, bottom=8pt,
+    before skip=10pt, after skip=10pt,
+  }
+}
+
+% --- Gray solid frame: black!10 fill, subtle edge, sharp corners, breakable ---
+% Used for example, property, exercise, and main-column remark/hint.
+% Breakable because examples and long remarks can span page breaks.
+\tcbset{
+  series-gray-frame/.style={
+    breakable,
+    colframe=black!20, colback=black!10, coltext=black,
+    boxrule=0.4pt, arc=0pt, outer arc=0pt,
+    left=10pt, right=10pt, top=8pt, bottom=8pt,
+    before skip=10pt, after skip=10pt,
+  }
+}
+
+% --- Adjacency check ---
+\newcommand{\series@lastthm}{}
+% Clear the flag whenever a real paragraph of text begins (robust against
+% \section etc. because the kernel para/begin hook stacks, unlike \everypar).
+\AddToHook{para/begin}[series-thm]{\gdef\series@lastthm{}}
+\newcommand{\series@thmcheck}{%
+  \ifx\series@lastthm\@empty\else
+    \PackageWarning{series-thm}{%
+      Two theorem-like environments are adjacent\MessageBreak
+      ('\series@lastthm' followed immediately by another).\MessageBreak
+      Insert at least one sentence of body text between them.}%
+  \fi
+}
+\newcommand{\series@thmmark}[1]{\gdef\series@lastthm{#1}}
+
+% --- Helper: wrap a numbered amsthm environment with a frame ---
+\newcommand{\series@wrapthm}[1]{%
+  \csletcs{series@old@#1}{#1}%
+  \csletcs{series@old@end#1}{end#1}%
+  \RenewDocumentEnvironment{#1}{o}{%
+    \series@thmcheck
+    \begin{tcolorbox}[series-thm-frame]
+      \color{black}%
+      \IfNoValueTF{##1}{\csname series@old@#1\endcsname}{\csname series@old@#1\endcsname[##1]}%
+  }{%
+      \csname series@old@end#1\endcsname
+    \end{tcolorbox}%
+    \color{black}%
+    \series@thmmark{#1}%
+  }%
+}
+% --- Helper: wrap a starred (unnumbered) amsthm environment ---
+\newcommand{\series@wrapthmstar}[1]{%
+  \csletcs{series@old@#1*}{#1*}%
+  \csletcs{series@old@end#1*}{end#1*}%
+  \RenewDocumentEnvironment{#1*}{o}{%
+    \series@thmcheck
+    \begin{tcolorbox}[series-thm-frame]
+      \color{black}%
+      \IfNoValueTF{##1}{\csname series@old@#1*\endcsname}{\csname series@old@#1*\endcsname[##1]}%
+  }{%
+      \csname series@old@end#1*\endcsname
+    \end{tcolorbox}%
+    \color{black}%
+    \series@thmmark{#1*}%
+  }%
+}
+
+% --- Helper: wrap an environment with a gray solid frame (breakable) ---
+% Floats are illegal inside tcolorbox ("Not in outer par mode"), so
+% figure/table are locally forced to non-floating [H] placement here.
+% \sidenote (=\marginpar) also cannot be placed inside a box — a deferred
+% marginpar would trigger "Float(s) lost" at the next \clearpage — so it
+% is locally rendered as inline muted text instead.
+% (float package already loaded in series-skin/packages.tex.)
+\newcommand{\series@makefloatslocal}{%
+  \let\series@saved@figure\figure
+  \let\series@saved@table\table
+  \def\figure{\@ifnextchar[{\series@float@opt@fig}{\series@saved@figure[H]}}%
+  \def\series@float@opt@fig[##1]{\series@saved@figure[H]}%
+  \def\table{\@ifnextchar[{\series@float@opt@tbl}{\series@saved@table[H]}}%
+  \def\series@float@opt@tbl[##1]{\series@saved@table[H]}%
+  \def\sidenote{\@ifnextchar[{\series@sn@opt}{\series@sn@plain}}%
+  \def\series@sn@opt[##1]##2{\series@sn@body{##2}}%
+  \def\series@sn@plain##1{\series@sn@body{##1}}%
+}
+\newcommand{\series@sn@body}[1]{{\footnotesize\color{InkMuted}（#1）}}
+
+\newcommand{\series@wrapthmgray}[1]{%
+  \csletcs{series@old@#1}{#1}%
+  \csletcs{series@old@end#1}{end#1}%
+  \RenewDocumentEnvironment{#1}{o}{%
+    \series@thmcheck
+    \begin{tcolorbox}[series-gray-frame]
+      \color{black}%
+      \series@makefloatslocal
+      \IfNoValueTF{##1}{\csname series@old@#1\endcsname}{\csname series@old@#1\endcsname[##1]}%
+  }{%
+      \csname series@old@end#1\endcsname
+    \end{tcolorbox}%
+    \color{black}%
+    \series@thmmark{#1}%
+  }%
+}
+
+\series@wrapthm{theorem}
+\series@wrapthm{definition}
+\series@wrapthm{lemma}
+\series@wrapthm{corollary}
+\series@wrapthm{proposition}
+\series@wrapthm{axiom}
+\series@wrapthm{postulate}
+
+\series@wrapthmstar{theorem}
+\series@wrapthmstar{definition}
+\series@wrapthmstar{lemma}
+\series@wrapthmstar{corollary}
+\series@wrapthmstar{proposition}
+\series@wrapthmstar{axiom}
+\series@wrapthmstar{postulate}
+
+% Gray solid frame for non-theorem environments
+% (property is wrapped inline in its own definition — see above)
+\series@wrapthmgray{example}
+\series@wrapthmgray{exercise}
+\makeatother
+
+% ----------------------------------------------------------------------------
+% Reader-fingerprint / anti-piracy measures live in the using project. Load
+% them there, after this file, if needed.
+% ----------------------------------------------------------------------------

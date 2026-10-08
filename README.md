@@ -7,6 +7,21 @@
 
 -------
 
+# 本 Fork 的改动
+
+类文件 `elegantbook.cls` 在上游 v4.7 基础上做了面向中文数学教材的扩展：
+
+- `monochrome` 配色，定理环境、图标、超链接与代码清单全部为印刷友好的黑白灰
+- 封面版式改为 `\coverstyle{banner|side}`，新增 `\mascot{}` 字段与 `\setvertfont[opts]{file}` 竖排 CJK 字体钩子
+- 页脚小字行钩子 `\footerpromo{}` 与 `\footerpromoplain{}`（默认为空，页脚回到上游的纯页码形态）
+- 可移植性替换：texgyretermes 字体命名、bbding 与 adforn 由 pifont 与菱形符号替代
+
+`series-skin/` 目录是叠加在类之上的完整排版皮肤，提供 16 开双边注版心、Tufte 式边注体系、定理框、章扉、中文交叉引用与黑白图形样式，全部书稿内容经钩子由文档注入。用法与模块清单见 [series-skin/README.md](series-skin/README.md)。
+
+以下为上游原版说明文档。
+
+-------
+
 # ElegantBook: 优美的 LaTeX 书籍模板 An Elegant LaTeX Template for Books 
 
 ElegantBook 是为 LaTeX 书籍写作而设计的模板，由 [Ethan Deng](https://github.com/EthanDeng) 和 [Liam Huang](https://github.com/Liam0205) 创立，而后由 [Ethan Deng](https://github.com/EthanDeng)、[乙醇](https://github.com/syvshc)和[死抠](https://github.com/sikouhjw)维护。自2026年起，由[啸行](https://github.com/OsbertWang)负责维护和发行。如果你有其他问题、建议或者报告 bug，可以提交 issues 或者加入我们的 QQ 用户交流群：692108391。

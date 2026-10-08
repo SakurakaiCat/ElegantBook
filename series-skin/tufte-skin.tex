@@ -1,0 +1,254 @@
+% ============================================================================
+% Tufte-like geometry + quiet chrome on elegantbook
+% Applied after design-tokens and class load (via preamble).
+% Forces physical-book twoside (class hardcodes oneside) + full-bleed series cover.
+% ============================================================================
+
+% --- Force twoside after elegantbook \LoadClass[...,oneside]{book} ---
+\makeatletter
+\@twosidetrue
+\@mparswitchtrue
+\makeatother
+
+% --- Twoside geometry: inner binding / outer margin notes ---
+% 16开（185×260mm）正式出版物尺寸；版心 128×216mm，页眉区
+% headheight+headsep 11.3mm < top 22mm，页脚 footskip+脚注行 ≈19mm < bottom 22mm。
+\geometry{
+  paperwidth=185mm,
+  paperheight=260mm,
+  twoside,
+  inner=\SeriesInner,
+  outer=\SeriesOuter,
+  marginparwidth=\SeriesMarginparWidth,
+  marginparsep=\SeriesMarginparSep,
+  top=22mm,
+  bottom=22mm,
+  headheight=22pt,
+  headsep=10pt,
+  footskip=14mm
+}
+% fancyhdr 在宏包加载时固化 \headwidth，晚于它的 \geometry 不会同步，
+% 页眉/页脚装饰会按旧版心宽度装盒。在几何定型后显式对齐。
+\setlength{\headwidth}{\textwidth}
+
+% --- Structure colors → warm ink (after monochrome class defaults) ---
+\colorlet{structurecolor}{InkBrown}
+\colorlet{main}{InkBrown}
+\colorlet{second}{InkMuted}
+\colorlet{third}{InkMuted}
+\colorlet{winered}{InkBrown}
+\colorlet{coverbar}{InkBrown}
+\colorlet{coverlinecolor}{InkMuted}
+
+% --- Disable text italics (math fonts untouched) ---
+\renewcommand{\itshape}{}
+\renewcommand{\slshape}{}
+\DeclareTextFontCommand{\textit}{\relax}
+\DeclareTextFontCommand{\textsl}{\relax}
+\renewcommand{\emph}[1]{{\kaishu #1}}
+% elegantbook Chinese “italic” alias often maps to kaishu — keep upright
+\AtBeginDocument{%
+  \renewcommand{\citshape}{\normalfont}%
+  \renewcommand{\cnormal}{\normalfont}%
+  \renewcommand{\cfs}{\normalfont}%
+}
+
+% --- Quieter titlesec (ink, less shouty chapter chrome) ---
+% 标题字号参考陶哲轩《实分析》实测：章 16pt(三号)、节 14pt(四号)、小节 12pt(小四)。
+% 注：CJK 字体统一 Scale=1.05，故 \zihao 实际渲染略大于名义值（章≈16.8、节≈14.7）。
+\titleformat{\chapter}[\style]{\bfseries}{%
+  \filcenter\zihao{4}\enspace\bfseries{\color{structurecolor}%
+    \IfAppendix{\appendixname\;\thechapter\;}{\xchaptertitle\;}}}{1pt}{%
+  \zihao{3}\bfseries\color{structurecolor}\filcenter}[]
+\titleformat{\section}[hang]{\bfseries}{%
+  \zihao{4}\bfseries{\color{structurecolor}\thesection}\enspace}{1pt}{%
+  \color{structurecolor}\zihao{4}\bfseries\filright}
+\titleformat{\subsection}[hang]{\bfseries}{%
+  \zihao{-4}\bfseries\color{structurecolor}\thesubsection\enspace}{1pt}{%
+  \color{structurecolor}\zihao{-4}\bfseries\filright}
+\titleformat{\subsubsection}[hang]{\bfseries}{%
+  \normalsize\bfseries\color{structurecolor}\thesubsubsection\enspace}{1pt}{%
+  \color{structurecolor}\normalsize\bfseries\filright}
+\titlespacing{\chapter}{0pt}{-10pt}{1.0\baselineskip}
+% 非星号形式保留中文标题后首段缩进；标题前空白大于标题后空白。
+\titlespacing{\section}{0pt}{18pt plus 3pt minus 2pt}{8pt plus 2pt minus 1pt}
+\titlespacing{\subsection}{0pt}{13pt plus 2pt minus 2pt}{6pt plus 1pt minus 1pt}
+\titlespacing{\subsubsection}{0pt}{10pt plus 2pt minus 1pt}{4pt plus 1pt minus 1pt}
+
+% --- Elegant fancyhdr: double rules + diamond ornaments ---
+\makeatletter
+\newcommand{\SeriesDiamond}{%
+  \tikz[baseline=-0.35ex]{\fill[InkMuted] (0,0) -- (0.09em,0.09em) -- (0,0.18em) -- (-0.09em,0.09em) -- cycle;}%
+}
+\newcommand{\SeriesHeadRule}{%
+  \color{InkMuted}%
+  \hrule height 0.55pt width\headwidth
+  \vspace{1.1pt}%
+  \hrule height 0.22pt width\headwidth
+}
+\newcommand{\SeriesFootRule}{%
+  \color{InkMuted}%
+  \hrule height 0.22pt width\textwidth
+  \vspace{1.0pt}%
+  \hrule height 0.55pt width\textwidth
+}
+\newcommand{\SeriesPageBadge}{%
+  \SeriesDiamond\,\thepage\,\SeriesDiamond
+}
+% Footer note line hook: redefine \SeriesFootNoteLine in your document
+% preamble to print a promo/legal line under the foot rule (e.g. series
+% credits). Empty by default — the footer then shows the rule only.
+\newcommand{\SeriesFootNoteLine}{}
+% Keep paragraph tokens inside a helper: older fancyhdr versions parse the
+% \fancyfoot argument with a non-long macro and reject an inline \par.
+\newcommand{\SeriesFooterContent}{%
+  \SeriesFootRule
+  \par\vspace{3pt}%
+  \SeriesFootNoteLine
+}
+
+\fancyhf{}
+\fancyhead[EL]{%
+  \color{structurecolor}\small\sffamily\leftmark
+}
+\fancyhead[OR]{%
+  \color{structurecolor}\small\sffamily\rightmark
+}
+% 页码置于页眉内角（参考陶书：§·页码·）；页脚不再显示页码。
+\fancyhead[ER]{\color{structurecolor}\small\sffamily\SeriesPageBadge}
+\fancyhead[OL]{\color{structurecolor}\small\sffamily\SeriesPageBadge}
+\renewcommand{\headrule}{\SeriesHeadRule}
+\renewcommand{\headrulewidth}{0.55pt}
+
+\fancyfoot[C]{\SeriesFooterContent}
+
+\pagestyle{fancy}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrule}{\SeriesHeadRule}%
+  \renewcommand{\headrulewidth}{0.55pt}%
+  \fancyhead[ER]{\color{structurecolor}\small\sffamily\SeriesPageBadge}%
+  \fancyhead[OL]{\color{structurecolor}\small\sffamily\SeriesPageBadge}%
+  \fancyfoot[C]{\SeriesFooterContent}%
+}
+\makeatother
+
+% --- Optional screen ivory page fill (default OFF for print) ---
+% Usage (before \begin{document}): \newcommand{\ScreenIvory}{}
+\ifdefined\ScreenIvory
+  \pagecolor{PaperIvory}
+\fi
+
+% --- Sidenote / marginfigure / fullwidth (outer gutter both sides) ---
+% marginfix (loaded in packages.tex) rewrites the \marginpar output routine
+% to stack margin notes vertically without overlap. \mparshift carries the
+% optional vertical offset into marginfix's position tracker.
+\newcommand{\SeriesMarginText}{%
+  \normalfont\footnotesize
+  \raggedright
+  \setlength{\parindent}{0pt}%
+  \setlength{\parskip}{2pt}%
+  \color{InkMuted}%
+}
+\newcommand{\sidenote}[2][0pt]{%
+  \mparshift{#1}%
+  \marginpar{%
+    \SeriesMarginText
+    \strut #2\par%
+  }%
+}
+
+% --- Footnote → sidenote (after hyperref + footmisc AtBeginDocument) ---
+\AtBeginDocument{%
+  \renewcommand{\footnote}[1]{%
+    \footnotemark
+    \sidenote{\textsuperscript{\thefootnote}\,#1}%
+  }%
+  \typeout{TUFTESKIN: footnote-to-sidenote=ok}%
+}
+
+\NewDocumentEnvironment{marginfigure}{O{0pt} +b}{%
+  \mparshift{#1}%
+  \marginpar{%
+    \begin{minipage}{\marginparwidth}%
+      \centering
+      \footnotesize
+      #2%
+    \end{minipage}%
+  }%
+}{}
+
+% Spans text block + outer margin gutter (odd: right; even: left)
+\newlength{\SeriesFullwidthOverhang}
+\AtBeginDocument{%
+  \setlength{\SeriesFullwidthOverhang}{\dimexpr\marginparwidth+\marginparsep\relax}%
+}
+\newenvironment{fullwidth}{%
+  \par
+  \noindent
+  \begin{list}{}{%
+    \setlength{\topsep}{0.5\baselineskip}%
+    \setlength{\partopsep}{0pt}%
+    \setlength{\listparindent}{\parindent}%
+    \setlength{\itemindent}{0pt}%
+    \setlength{\parsep}{0pt}%
+    \ifodd\value{page}
+      \setlength{\leftmargin}{0pt}%
+      \setlength{\rightmargin}{-\SeriesFullwidthOverhang}%
+    \else
+      \setlength{\leftmargin}{-\SeriesFullwidthOverhang}%
+      \setlength{\rightmargin}{0pt}%
+    \fi
+  }%
+  \item\relax
+}{%
+  \end{list}%
+  \par
+}
+
+% --- Full-bleed series cover: replace elegantbook banner/side \maketitle ---
+\makeatletter
+\renewcommand*{\maketitle}{%
+  \hypersetup{pageanchor=false}%
+  \pagenumbering{Alph}%
+  \begin{titlepage}%
+    \thispagestyle{empty}%
+    \newgeometry{margin=0pt}%
+    \setlength{\parindent}{0pt}%
+    \setlength{\parskip}{0pt}%
+    \ifcsname @cover\endcsname
+      \begin{tikzpicture}[remember picture,overlay]
+        \node[anchor=center,inner sep=0pt,outer sep=0pt]
+          at (current page.center) {%
+            \includegraphics[width=\paperwidth,height=\paperheight]{\@cover}%
+          };
+      \end{tikzpicture}%
+    \else
+      \PackageWarning{tufte-skin}{No \string\cover set; empty full-bleed title page}%
+    \fi
+    \null
+  \end{titlepage}%
+  \restoregeometry
+  % newgeometry temporarily clears twoside/mparswitch; re-assert after restore.
+  \@twosidetrue
+  \@mparswitchtrue
+  \thispagestyle{empty}%
+}
+\makeatother
+
+% --- Geometry / mode probe (log only) ---
+\makeatletter
+\AtBeginDocument{%
+  \typeout{TUFTESKIN: twoside=\if@twoside true\else false\fi}%
+  \typeout{TUFTESKIN: mparswitch=\if@mparswitch true\else false\fi}%
+  \typeout{TUFTESKIN: marginparwidth=\the\marginparwidth}%
+  \typeout{TUFTESKIN: marginparsep=\the\marginparsep}%
+  \typeout{TUFTESKIN: headheight=\the\headheight}%
+  \typeout{TUFTESKIN: oddsidesep=\the\oddsidemargin}%
+  \typeout{TUFTESKIN: evensidesep=\the\evensidemargin}%
+  \typeout{TUFTESKIN: textwidth=\the\textwidth}%
+  \typeout{TUFTESKIN: sidenote-macros=ok}%
+  \typeout{TUFTESKIN: fullbleed-maketitle=ok}%
+  \typeout{TUFTESKIN: no-text-italics=ok}%
+}
+\makeatother
